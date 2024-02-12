@@ -8,18 +8,20 @@ import smtplib
 from prophet.serialize import model_from_json
 import datetime
 from streamlit_timeline import st_timeline
+import matplotlib.pyplot as plt
+import os
 
 
 
 
-st.set_page_config(page_title="TruChain", page_icon=":tada:", layout="wide")
+st.set_page_config(page_title="MQH", page_icon=":tada:", layout="wide")
 # ---- HEADER SECTION ----
 with st.container():
     c1, c2 = st.columns(2)
     with c1:
-        st.title("TruChain")
+        st.title("MQH")
         st.write(
-            "Stay Ahead of the Game with TruChain."
+            "Stay Ahead of the Game with MQH."
         )
         st.write("[Learn More >](https://www.craft.do/s/ObT9EzINTmlNed)")
     with c2:
@@ -47,16 +49,14 @@ def info(title, text):
 local_css("style/style.css")
 
 # ---- LOAD ASSETS ----
-lottie_coding_1 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json")
-lottie_coding_2 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_2cwDXD.json")
+# lottie_coding_1 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_fcfjwiyb.json")
+# lottie_coding_2 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_2cwDXD.json")
 
 
 
 
-st.sidebar.header('TruChain')
+st.sidebar.header('MQH')
 
-st.sidebar.subheader('What you want to Predict?')
-selected_model = st.sidebar.selectbox('Choose:', ('Forecasting Model', 'Anomaly Detection')) 
 
 path = "model/forecast.csv"
 print(path)
@@ -64,11 +64,9 @@ df = pd.read_csv(path)
 
 
 
-
-
 st.sidebar.markdown('''
 ---
-Created with ❤️ by [TruChain](https://github.com/Shivansh1203/TruChain).
+Created with ❤️ by [TruChain](https://github.com/Shivansh1203/MQH).
 ''')
 
 
@@ -92,115 +90,167 @@ with st.container():
             """
         )
         st.write("[Our Repository >]()")
-    with right_column:
+    # with right_column:
        
-        st_lottie(lottie_coding_1, height=300, key="coding")
+    #     # st_lottie(lottie_coding_1, height=300, key="coding")
        
 
 # ---- PROJECTS ----
 with st.container():
     st.write("---")
 
-    if(selected_model=='Forecasting Model'):
+  
 
-        st.header("Charts Pattern")
+    st.header("Charts Pattern")
+
+
+
+    # st_lottie(lottie_coding_1, height=300, key="coding")
+
+     # Load the forecast data
+    # df = pd.read_csv("model/forecast.csv")
+
+     # Define start and end dates
+    # start_date = datetime.date(2010, 1, 1)
+    # end_date = datetime.date(2023, 12, 31)
+
+    # # Create date input
+    # selected_date = st.date_input(
+    #      "Choose a date",
+    #     value=datetime.date(2011, 1, 1),
+    #     min_value=start_date,
+    #     max_value=end_date,
+    #     key="date_input"
+    # )
+
+
+
+
+
+# Function to parse date strings
+def parse_date(date_str):
+    return pd.to_datetime(date_str, format='%d-%m-%Y')
+
+# Function to visualize data
+def visualize_data(csv_file, start_date, end_date, year):
+    # Load the CSV file
+    df = pd.read_csv(csv_file)
+
+    # Streamlit UI
+    st.title('Data Visualization')
+    
+    st.write(f'CSV File Selected: {csv_file}')  # Display selected CSV file name
+
+    # Filter data between start and end dates and remove NA values for the selected year
+    filtered_data = df[(df[f'Timestamp.{year}'] >= start_date.strftime('%d-%m-%Y')) & 
+                       (df[f'Timestamp.{year}'] <= end_date.strftime('%d-%m-%Y'))]
+
+    # Convert 'NA' to NaN
+    filtered_data[year] = pd.to_numeric(filtered_data[year], errors='coerce')
+
+    # Interpolate NaN values
+    filtered_data[year] = filtered_data[year].interpolate()
+
+    # Plot the data
+    if not filtered_data.empty:
+        plt.figure(figsize=(10, 6))
+        plt.plot(filtered_data[f'Timestamp.{year}'], filtered_data[year])
+        plt.xlabel('Date')
+        plt.ylabel('Values')
+        plt.title(f'Line Graph of Values from {year}')
+        plt.xticks(rotation=45)
+        st.pyplot(plt)
+
+        # Calculate broader range where data was oscillating the most
+        differences = filtered_data[year].diff()
+        max_diff_range = differences.abs().max()
+        st.write(f'The broader range where the data was oscillating the most in {year}: ±{max_diff_range}')
+
+        # Calculate highest and lowest values
+        highest_value = filtered_data[year].max()
+        lowest_value = filtered_data[year].min()
+        st.write(f'Highest value in Timestamp.{year} column: {highest_value}')
+        st.write(f'Lowest value in Timestamp.{year} column: {lowest_value}')
     else:
-        st.header("Anomaly Detection")
+        st.write('No data available for the selected date range.')
 
-    if selected_model=='Forecasting Model':
+# List available CSV files
+csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
 
-        # st_lottie(lottie_coding_1, height=300, key="coding")
+# Streamlit UI
+csv_file = st.selectbox('Select CSV File', csv_files)  # Dropdown box for selecting CSV file
+start_date = st.date_input('Start Date', parse_date('01-04-2011'))  # Example start date
+end_date = st.date_input('End Date', parse_date('30-05-2011'))  # Example end date
+year = st.selectbox('Select Year', ['2011', '2012', '2013', '2014'])  # Dropdown box for selecting year
 
-        # Load the forecast data
-        df = pd.read_csv("model/forecast.csv")
+# Visualize data
+visualize_data(csv_file, start_date, end_date, year)
 
-        # Define start and end dates
-        start_date = datetime.date(2010, 1, 1)
-        end_date = datetime.date(2023, 12, 31)
 
-        # Create date input
-        selected_date = st.date_input(
-            "Choose a date",
-            value=datetime.date(2015, 1, 1),
-            min_value=start_date,
-            max_value=end_date,
-            key="date_input"
-        )
 
-        # Filter the forecast data for the selected date
-        d = selected_date.strftime("%Y-%m-%d")
-        forecast = df.loc[df['ds'] == d]
 
-        # Display the prediction information
-        if not forecast.empty:
-            yhat = "{:.2f}".format(float(forecast['yhat']))
-            yhat_upper = "{:.2f}".format(float(forecast['yhat_upper']))
-            yhat_lower = "{:.2f}".format(float(forecast['yhat_lower']))
-            prediction_year_info = "On {} the predicted supply demand is between {} and {}, with a most likely demand of {}.".format(
-                d, yhat_upper, yhat_lower, yhat)
-            st.write(prediction_year_info)
-        else:
-            st.write("No prediction available for the selected date.")
-        with open('model/model.json', 'r') as fin:
-            m = model_from_json(fin.read())  # Load model
-        forecast = pd.read_csv('model/forecast.csv')
-        fig=plot_plotly(m,forecast)
-        st.plotly_chart(fig)
-        polar_title = "Polar Plot"
-        st.header(polar_title)
-        info("Info", "This shows the trend of supply demand for the given period.")
-        left_column,  center_column, right_column = st.columns(3)
-        with left_column:
-            " "
+
+     # Filter the forecast data for the selected date
+    # d = selected_date.strftime("%Y-%m-%d")
+    # forecast = df.loc[df['ds'] == d]
+
+    #  # Display the prediction information
+    # if not forecast.empty:
+    #     yhat = "{:.2f}".format(float(forecast['yhat']))
+    #     yhat_upper = "{:.2f}".format(float(forecast['yhat_upper']))
+    #     yhat_lower = "{:.2f}".format(float(forecast['yhat_lower']))
+    #     prediction_year_info = "On {} the predicted supply demand is between {} and {}, with a most likely demand of {}.".format(
+    #         d, yhat_upper, yhat_lower, yhat)
+    #     st.write(prediction_year_info)
+    
+    # else:
+    #     st.write("No prediction available for the selected date.")
+    #     with open('model/model.json', 'r') as fin:
+    #         m = model_from_json(fin.read())  # Load model
+    #     forecast = pd.read_csv('model/forecast.csv')
+    #     fig=plot_plotly(m,forecast)
+    #     st.plotly_chart(fig)
+        # polar_title = "Polar Plot"
+        # st.header(polar_title)
+        # info("Info", "This shows the trend of supply demand for the given period.")
+        # left_column,  center_column, right_column = st.columns(3)
+        # with left_column:
+        #     " "
         
-        with center_column:
-            st.image('images/truchain_polarplot.png')
+        # with center_column:
+        #     st.image('images/truchain_polarplot.png')
 
-        with right_column:
-            " "
-    else:
-        # st_lottie(lottie_coding_2, height=300, key="coding")
-        results = pd.read_csv('model/anomaly.csv')
-        fig = px.scatter(results.reset_index(), x='ds', y='y', color='anomaly', title='Anomaly’s')
-        fig.update_xaxes(
-            rangeslider_visible=True,
-            rangeselector=dict(
-                buttons=list([
-                    dict(count=1, label="1y", step="year", stepmode="backward"),
-                    dict(count=2, label="3y", step="year", stepmode="backward"),
-                    dict(count=3, label="5y", step="year", stepmode="backward"),
-                    dict(step="all")
-                ])
-            )
-        )
-        st.plotly_chart(fig)
+        # with right_column:
+        #     " "
+    
+        # st.plotly_chart(fig)
 
-        timeine_title = "Major Supply Chain Hikes"
-        st.header(timeine_title)
-        info("Info", "The timeline highlights the major events in the predicted year regarding supply demands.")
-        path = "model/anomaly.csv"
-        df = pd.read_csv(path)
+        # timeine_title = "Major Supply Chain Hikes"
+        # st.header(timeine_title)
+        # info("Info", "The timeline highlights the major events in the predicted year regarding supply demands.")
+        # path = "model/anomaly.csv"
+        # df = pd.read_csv(path)
 
-        items = []
-        i = 1
-        for index, row in df.iterrows():
-            anomaly = str(row["anomaly"])
-            if anomaly == "Yes":
-                content = "On {}, it is expected to experience an anomaly in supply demand.".format(
-                    str(row["ds"]))
-                item = {"id": i, "content": "⚠",
-                        "message": content, "start": str(row["ds"])}
-                items.append(item)
-                i += 1
+        # items = []
+        # i = 1
+        # for index, row in df.iterrows():
+        #     anomaly = str(row["anomaly"])
+        #     if anomaly == "Yes":
+        #         content = "On {}, it is expected to experience an anomaly in supply demand.".format(
+        #             str(row["ds"]))
+        #         item = {"id": i, "content": "⚠",
+        #                 "message": content, "start": str(row["ds"])}
+        #         items.append(item)
+        #         i += 1
 
-        options = {
-            "min": "2015-01-04",
-            "max": "2017-01-03"
-        }
+        # options = {
+        #     "min": "2015-01-04",
+        #     "max": "2017-01-03"
+        # }
 
-        timeline = st_timeline(items, groups=[], options=options, height="300px")
-        st.subheader("Selected item")
-        st.write(timeline)
+        # timeline = st_timeline(items, groups=[], options=options, height="300px")
+        # st.subheader("Selected item")
+        # st.write(timeline)
 
 
 
