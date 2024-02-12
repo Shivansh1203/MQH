@@ -5,13 +5,11 @@ import plotly.express as px
 import requests
 from streamlit_lottie import st_lottie
 import smtplib
-from prophet.serialize import model_from_json
 import datetime
-from streamlit_timeline import st_timeline
 import matplotlib.pyplot as plt
 import os
 from PIL import Image
-
+import plotly.graph_objects as go
 
 
 st.set_page_config(page_title="MQH", page_icon=":tada:", layout="wide")
@@ -64,7 +62,7 @@ def parse_date(date_str):
     return pd.to_datetime(date_str, format='%d-%m-%Y')
 
 st.sidebar.header('MQH')
-
+st.sidebar.header("Select The Parameters:")
 csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
 csv_file = st.sidebar.selectbox('**Select CSV File:**', csv_files) 
 start_date = st.sidebar.date_input('**Start Date:**', parse_date('18-01-2011'))  
@@ -102,11 +100,6 @@ with st.container():
 
   
 
-    st.header("Select The Parameters:")
-
-
-
-
 
 # # Function to parse date strings
 # def parse_date(date_str):
@@ -131,28 +124,55 @@ def visualize_data(csv_file, start_date, end_date, year):
 
     filtered_data[year] = filtered_data[year].interpolate()
 
-    # Plot the data
-    if not filtered_data.empty:
-        plt.figure(figsize=(10, 6))
-        plt.plot(filtered_data[f'Timestamp.{year}'], filtered_data[year])
-        plt.xlabel('Date')
-        plt.ylabel('Values')
-        plt.title(f'Line Graph of Values from {year}')
-        plt.xticks(rotation=45)
-        st.pyplot(plt)
+    # Toggle button to switch between graph representations
+    graph_type = st.radio("**Select Graph Representation:**", ("Data Points", "Continuous"))
 
-        # Calculate broader range where data was oscillating the most
-        differences = filtered_data[year].diff()
-        max_diff_range = differences.abs().max()
-        st.write(f'**The broader range where the data was oscillating the most in {year}: ±{max_diff_range}**')
+    # Show Matplotlib or Plotly visualization based on selected representation
+    if graph_type == "Continuous":
+        if not filtered_data.empty:
+                plt.figure(figsize=(10, 6))
+                plt.plot(filtered_data[f'Timestamp.{year}'], filtered_data[year])
+                plt.xlabel('Date')
+                plt.ylabel('Values')
+                plt.title(f'Line Graph of Values from {year}')
+                plt.xticks(rotation=45)
 
-        # Calculate highest and lowest values
-        highest_value = filtered_data[year].max()
-        lowest_value = filtered_data[year].min()
-        st.write(f'**Highest value in Timestamp.{year} column: {highest_value}**')
-        st.write(f'**Lowest value in Timestamp.{year} column: {lowest_value}**')
-    else:
-        st.write('No data available for the selected date range.')
+            
+                st.pyplot(plt)
+        else:   
+                st.write('No data available for the selected date range.')
+
+    elif graph_type == "Data Points":
+        if not filtered_data.empty:
+           fig = go.Figure()
+           fig.add_trace(go.Scatter(x=filtered_data[f'Timestamp.{year}'], y=filtered_data[year],
+                                             mode='lines+markers', hoverinfo='y'))
+           fig.update_layout(title=f'Line Graph of Values from {year}',
+                                    xaxis_title='Date', yaxis_title='Values')
+           st.plotly_chart(fig)
+
+
+
+           
+        else:
+            st.write('No data available for the selected date range.')
+            
+
+
+        
+
+     # Calculate broader range where data was oscillating the most
+    differences = filtered_data[year].diff()
+    max_diff_range = differences.abs().max()
+    st.write(f'**The broader range where the data was oscillating the most in {year}: ±{max_diff_range}**')
+
+     # Calculate highest and lowest values
+    highest_value = filtered_data[year].max()
+    lowest_value = filtered_data[year].min()
+    st.write(f'**Highest value in Timestamp.{year} column: {highest_value}**')
+    st.write(f'**Lowest value in Timestamp.{year} column: {lowest_value}**')
+    # else:
+    #     st.write('No data available for the selected date range.')
 
 # List available CSV files
 # csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
