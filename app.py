@@ -93,10 +93,9 @@ with st.container():
         )
         st.write("[Our Repository >]()")
     with right_column:
-        if selected_model == 'Forecasting Model':
-            st_lottie(lottie_coding_1, height=300, key="coding")
-        else:
-            st_lottie(lottie_coding_2, height=300, key="coding")
+       
+        st_lottie(lottie_coding_1, height=300, key="coding")
+       
 
 # ---- PROJECTS ----
 with st.container():
@@ -104,7 +103,7 @@ with st.container():
 
     if(selected_model=='Forecasting Model'):
 
-        st.header("Our Model")
+        st.header("Charts Pattern")
     else:
         st.header("Anomaly Detection")
 
@@ -116,7 +115,7 @@ with st.container():
         df = pd.read_csv("model/forecast.csv")
 
         # Define start and end dates
-        start_date = datetime.date(2015, 1, 1)
+        start_date = datetime.date(2010, 1, 1)
         end_date = datetime.date(2023, 12, 31)
 
         # Create date input
