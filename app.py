@@ -148,8 +148,8 @@ if selected_csv:
     
 
     # Set default start and end dates
-    default_start_date = pd.Timestamp('2011-02-16') 
-    default_end_date = pd.Timestamp('2014-08-14')
+    # default_start_date = pd.Timestamp('2011-02-16') 
+    # default_end_date = pd.Timestamp('2014-08-14')
 
 
 
