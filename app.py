@@ -147,8 +147,10 @@ if selected_csv:
     max_timestamp = pd.to_datetime(dataframe['Timestamp'].max(), format='%d-%m-%Y')
     
 
-    default_start_date = pd.Timestamp('2011-01-18')
-    default_end_date = pd.Timestamp('2011-01-25')
+    # Set default start and end dates
+    default_start_date = pd.Timestamp('2011-02-16') 
+    default_end_date = pd.Timestamp('2014-08-14')
+
 
 
     start_date = st.sidebar.date_input('Start date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=default_start_date.date())
