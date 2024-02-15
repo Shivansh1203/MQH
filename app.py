@@ -101,6 +101,12 @@ def reshape_csv_table(csv_file):
     
     return new_df
 
+def calculate_statistics(df):
+    value_range = df['Value'].max() - df['Value'].min()
+    highest_value = df['Value'].max()
+    lowest_value = df['Value'].min()
+    return value_range, highest_value, lowest_value
+
 # ---- WHAT I DO ----
 with st.container():
     st.write("---")
@@ -122,12 +128,16 @@ with st.container():
 st.title('CSV Viewer and Data Visualization')
 
 # Fetch all CSV files from the current directory
-csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+# csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
 
-st.sidebar.header('MQH')
+st.sidebar.header('MQH 2011-2014')
 st.sidebar.header("Select The Parameters:")
-selected_csv = st.sidebar.selectbox("Choose a CSV file", csv_files)
+csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+# selected_csv = st.sidebar.selectbox("Choose a CSV file", csv_files)
+# Fetch all CSV files from the current directory
 
+# Multiselect menu to select multiple CSV files
+selected_csvs = st.sidebar.multiselect("Choose CSV files", csv_files)
 
 st.sidebar.markdown('''
 ---
@@ -135,16 +145,26 @@ Created with ❤️ by [Shivansh](https://github.com/Shivansh1203/MQH).
 ''')
 
 
-if selected_csv:
-    # Process the selected CSV file
-    dataframe = reshape_csv_table(selected_csv)
+if selected_csvs:
+    # # Process the selected CSV file
+    # dataframe = reshape_csv_table(selected_csvs)
     
-    # Display the dataframe (optional)
-    st.write(dataframe)
+    # # Display the dataframe (optional)
+    # st.write(dataframe)
+    
+    # # Convert minimum and maximum Timestamp values to datetime objects
+    # min_timestamp = pd.to_datetime(dataframe['Timestamp'].min(), format='%d-%m-%Y')
+    # max_timestamp = pd.to_datetime(dataframe['Timestamp'].max(), format='%d-%m-%Y')
+     # Process the selected CSV files
+    dataframes = [reshape_csv_table(csv_file) for csv_file in selected_csvs]
+    
+    for idx, dataframe in enumerate(dataframes):
+        st.subheader(f"CSV File {idx + 1}")
+        st.write(dataframe)
     
     # Convert minimum and maximum Timestamp values to datetime objects
-    min_timestamp = pd.to_datetime(dataframe['Timestamp'].min(), format='%d-%m-%Y')
-    max_timestamp = pd.to_datetime(dataframe['Timestamp'].max(), format='%d-%m-%Y')
+    min_timestamp = min(df['Timestamp'].min() for df in dataframes)
+    max_timestamp = max(df['Timestamp'].max() for df in dataframes)
     
 
     # Set default start and end dates
@@ -156,40 +176,63 @@ if selected_csv:
     start_date = st.sidebar.date_input('Start date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=min_timestamp.date())
     end_date = st.sidebar.date_input('End date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=max_timestamp.date())
 
+     # Filter the dataframes based on the selected date range
+    filtered_dfs = []
+    for dataframe in dataframes:
+        mask = (dataframe['Timestamp'] >= pd.Timestamp(start_date)) & (dataframe['Timestamp'] <= pd.Timestamp(end_date))
+        filtered_df = dataframe.loc[mask]
+        filtered_dfs.append(filtered_df)
     
-    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'], format='%d-%m-%Y')
+    # Plotting with Plotly
+    for idx, filtered_df in enumerate(filtered_dfs):
+        if not filtered_df.empty:
+            st.subheader(f"Plot for CSV File {idx + 1}")
+            st.write("Hover over the plot to see data values.")
+            fig = px.line(filtered_df, x='Timestamp', y='Value', title=f'Value over Time (CSV File {idx + 1})', labels={'Timestamp': 'Timestamp', 'Value': 'Value'})
+            fig.update_xaxes(rangeslider_visible=True)  # Add range slider for zooming
+            st.plotly_chart(fig)
+
+             # Calculate statistics
+            value_range, highest_value, lowest_value = calculate_statistics(filtered_df)
+            st.write(f'**Range of values:** {value_range}')
+            st.write(f'**Highest value:** {highest_value}')
+            st.write(f'**Lowest value:** {lowest_value}')
+
+        else:
+            st.write(f"No data available for CSV File {idx + 1}.")
+    # dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'], format='%d-%m-%Y')
     
-    # Filter the dataframe based on the selected date range
-    mask = (dataframe['Timestamp'] >= pd.Timestamp(start_date)) & (dataframe['Timestamp'] <= pd.Timestamp(end_date))
-    filtered_df = dataframe.loc[mask]
+    # # Filter the dataframe based on the selected date range
+    # mask = (dataframe['Timestamp'] >= pd.Timestamp(start_date)) & (dataframe['Timestamp'] <= pd.Timestamp(end_date))
+    # filtered_df = dataframe.loc[mask]
     
  
-    if not filtered_df.empty:
+    # if not filtered_df.empty:
    
-        st.subheader("Detailed Plot")
-        st.write("Hover over the plot to see data values.")
-        fig = px.line(filtered_df, x='Timestamp', y='Value', title='Value over Time', labels={'Timestamp': 'Timestamp', 'Value': 'Value'})
-        fig.update_xaxes(rangeslider_visible=True)  # Add range slider for zooming
-        st.plotly_chart(fig)
-    else:
-        st.write("No data available for the selected date range.")
+    #     st.subheader("Detailed Plot")
+    #     st.write("Hover over the plot to see data values.")
+    #     fig = px.line(filtered_df, x='Timestamp', y='Value', title='Value over Time', labels={'Timestamp': 'Timestamp', 'Value': 'Value'})
+    #     fig.update_xaxes(rangeslider_visible=True)  # Add range slider for zooming
+    #     st.plotly_chart(fig)
+    # else:
+    #     st.write("No data available for the selected date range.")
     
 
-    if not filtered_df.empty:
-        st.subheader("General Trend")
-        st.line_chart(filtered_df.set_index('Timestamp'))
+    # if not filtered_df.empty:
+    #     st.subheader("General Trend")
+    #     st.line_chart(filtered_df.set_index('Timestamp'))
         
-        # Calculate range of values
-        value_range = filtered_df['Value'].max() - filtered_df['Value'].min()
-        st.write(f'**Range of values:** {value_range}')
+    #     # Calculate range of values
+    #     value_range = filtered_df['Value'].max() - filtered_df['Value'].min()
+    #     st.write(f'**Range of values:** {value_range}')
         
-        # Calculate highest and lowest values
-        highest_value = filtered_df['Value'].max()
-        lowest_value = filtered_df['Value'].min()
-        st.write(f'**Highest value:** {highest_value}')
-        st.write(f'**Lowest value:** {lowest_value}')
-    else:
-        st.write("No data available for the selected date range.")
+    #     # Calculate highest and lowest values
+    #     highest_value = filtered_df['Value'].max()
+    #     lowest_value = filtered_df['Value'].min()
+    #     st.write(f'**Highest value:** {highest_value}')
+    #     st.write(f'**Lowest value:** {lowest_value}')
+    # else:
+    #     st.write("No data available for the selected date range.")
 
 
 
