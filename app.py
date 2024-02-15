@@ -153,8 +153,8 @@ if selected_csv:
 
 
 
-    start_date = st.sidebar.date_input('Start date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=default_start_date.date())
-    end_date = st.sidebar.date_input('End date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=default_end_date.date())
+    start_date = st.sidebar.date_input('Start date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=min_timestamp.date())
+    end_date = st.sidebar.date_input('End date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=max_timestamp.date())
 
     
     dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'], format='%d-%m-%Y')
