@@ -57,23 +57,49 @@ lottie_coding_1 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_
 lottie_coding_2 = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_2cwDXD.json")
 
 
-# Function to parse date strings
-def parse_date(date_str):
-    return pd.to_datetime(date_str, format='%d-%m-%Y')
 
-st.sidebar.header('MQH')
-st.sidebar.header("Select The Parameters:")
-csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
-csv_file = st.sidebar.selectbox('**Select CSV File:**', csv_files) 
-start_date = st.sidebar.date_input('**Start Date:**', parse_date('18-01-2011'))  
-end_date = st.sidebar.date_input('**End Date:**', parse_date('25-01-2011'))
-year = st.sidebar.selectbox('**Select Year:**', ['2011', '2012', '2013', '2014']) 
-
-st.sidebar.markdown('''
----
-Created with ❤️ by [Shivansh](https://github.com/Shivansh1203/MQH).
-''')
-
+def reshape_csv_table(csv_file):
+    # Read the CSV file
+    df = pd.read_csv(csv_file)
+    
+    # Initialize empty lists for Timestamp and Value
+    timestamps = []
+    values = []
+    
+    # Iterate through each row in the dataframe
+    for index, row in df.iterrows():
+        # Iterate through each column in the row
+        for column in df.columns:
+            # If the column name starts with "Timestamp"
+            if column.startswith('Timestamp'):
+                # Get the timestamp value
+                timestamp = row[column]
+                # If the timestamp value is not NaN
+                if pd.notna(timestamp):
+                    # Append the timestamp value to the list
+                    timestamps.append(timestamp)
+                    # Extract the corresponding value from the row
+                    value_col = column.replace('Timestamp', '')
+                    value = row[value_col.strip('. ')]
+                    # Append the corresponding value to the list
+                    values.append(value)
+    
+    # Create a new dataframe with Timestamp and Value columns
+    new_df = pd.DataFrame({'Timestamp': timestamps, 'Value': values})
+    
+    # Remove rows with NaN values in the "Value" column
+    new_df = new_df.dropna(subset=['Value'])
+    
+    # Convert Timestamp column to datetime
+    new_df['Timestamp'] = pd.to_datetime(new_df['Timestamp'], format='%d-%m-%Y', errors='coerce')
+    
+    # Sort the dataframe by Timestamp in ascending order
+    new_df = new_df.sort_values(by='Timestamp')
+    
+    # Remove rows with NaN values after sorting
+    new_df = new_df.dropna(subset=['Timestamp'])
+    
+    return new_df
 
 # ---- WHAT I DO ----
 with st.container():
@@ -92,99 +118,76 @@ with st.container():
     with right_column:
        
         st_lottie(lottie_coding_1, height=300, key="coding")
-       
 
-# ---- PROJECTS ----
-with st.container():
-    st.write("---")
+st.title('CSV Viewer and Data Visualization')
 
-  
+# Fetch all CSV files from the current directory
+csv_files = [file for file in os.listdir('.') if file.endswith('.csv')]
+
+st.sidebar.header('MQH')
+st.sidebar.header("Select The Parameters:")
+selected_csv = st.sidebar.selectbox("Choose a CSV file", csv_files)
 
 
-# # Function to parse date strings
-# def parse_date(date_str):
-#     return pd.to_datetime(date_str, format='%d-%m-%Y')
+st.sidebar.markdown('''
+---
+Created with ❤️ by [Shivansh](https://github.com/Shivansh1203/MQH).
+''')
 
-# Function to visualize data
-def visualize_data(csv_file, start_date, end_date, year):
-    # Load the CSV file
-    df = pd.read_csv(csv_file)
 
-    # Streamlit UI
-    st.title('Data Visualization')
+if selected_csv:
+    # Process the selected CSV file
+    dataframe = reshape_csv_table(selected_csv)
     
-    st.write(f'**CSV File Selected: {csv_file}**')  
+    # Display the dataframe (optional)
+    st.write(dataframe)
+    
+    # Convert minimum and maximum Timestamp values to datetime objects
+    min_timestamp = pd.to_datetime(dataframe['Timestamp'].min(), format='%d-%m-%Y')
+    max_timestamp = pd.to_datetime(dataframe['Timestamp'].max(), format='%d-%m-%Y')
+    
 
-  
-    filtered_data = df[(df[f'Timestamp.{year}'] >= start_date.strftime('%d-%m-%Y')) & 
-                       (df[f'Timestamp.{year}'] <= end_date.strftime('%d-%m-%Y'))]
-
-
-    filtered_data[year] = pd.to_numeric(filtered_data[year], errors='coerce')
-
-    filtered_data[year] = filtered_data[year].interpolate()
-
-    # Toggle button to switch between graph representations
-    graph_type = st.radio("**Select Graph Representation:**", ("Data Points", "Continuous"))
-
-    # Show Matplotlib or Plotly visualization based on selected representation
-    if graph_type == "Continuous":
-        if not filtered_data.empty:
-                plt.figure(figsize=(10, 6))
-                plt.plot(filtered_data[f'Timestamp.{year}'], filtered_data[year])
-                plt.xlabel('Date')
-                plt.ylabel('Values')
-                plt.title(f'Line Graph of Values from {year}')
-                plt.xticks(rotation=45)
-
-            
-                st.pyplot(plt)
-        else:   
-                st.write('No data available for the selected date range.')
-
-    elif graph_type == "Data Points":
-        if not filtered_data.empty:
-           fig = go.Figure()
-           fig.add_trace(go.Scatter(x=filtered_data[f'Timestamp.{year}'], y=filtered_data[year],
-                                             mode='lines+markers', hoverinfo='y'))
-           fig.update_layout(title=f'Line Graph of Values from {year}',
-                                    xaxis_title='Date', yaxis_title='Values')
-           st.plotly_chart(fig)
+    default_start_date = pd.Timestamp('2011-01-18')
+    default_end_date = pd.Timestamp('2011-01-25')
 
 
+    start_date = st.sidebar.date_input('Start date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=default_start_date.date())
+    end_date = st.sidebar.date_input('End date', min_value=min_timestamp.date(), max_value=max_timestamp.date(), value=default_end_date.date())
 
-           
-        else:
-            st.write('No data available for the selected date range.')
-            
+    
+    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'], format='%d-%m-%Y')
+    
+    # Filter the dataframe based on the selected date range
+    mask = (dataframe['Timestamp'] >= pd.Timestamp(start_date)) & (dataframe['Timestamp'] <= pd.Timestamp(end_date))
+    filtered_df = dataframe.loc[mask]
+    
+ 
+    if not filtered_df.empty:
+   
+        st.subheader("Detailed Plot")
+        st.write("Hover over the plot to see data values.")
+        fig = px.line(filtered_df, x='Timestamp', y='Value', title='Value over Time', labels={'Timestamp': 'Timestamp', 'Value': 'Value'})
+        fig.update_xaxes(rangeslider_visible=True)  # Add range slider for zooming
+        st.plotly_chart(fig)
+    else:
+        st.write("No data available for the selected date range.")
+    
 
-
+    if not filtered_df.empty:
+        st.subheader("General Trend")
+        st.line_chart(filtered_df.set_index('Timestamp'))
         
-
-     # Calculate broader range where data was oscillating the most
-    differences = filtered_data[year].diff()
-    max_diff_range = differences.abs().max()
-    st.write(f'**The broader range where the data was oscillating the most in {year}: ±{max_diff_range}**')
-
-     # Calculate highest and lowest values
-    highest_value = filtered_data[year].max()
-    lowest_value = filtered_data[year].min()
-    st.write(f'**Highest value in Timestamp.{year} column: {highest_value}**')
-    st.write(f'**Lowest value in Timestamp.{year} column: {lowest_value}**')
-    # else:
-    #     st.write('No data available for the selected date range.')
-
-# List available CSV files
-# csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
-
-
-# csv_file = st.selectbox('**Select CSV File:**', csv_files) 
-# start_date = st.date_input('**Start Date:**', parse_date('18-01-2011'))  
-# end_date = st.date_input('**End Date:**', parse_date('25-01-2011'))
-# year = st.selectbox('**Select Year:**', ['2011', '2012', '2013', '2014']) 
-
-# Visualize data
-visualize_data(csv_file, start_date, end_date, year)
+        # Calculate range of values
+        value_range = filtered_df['Value'].max() - filtered_df['Value'].min()
+        st.write(f'**Range of values:** {value_range}')
+        
+        # Calculate highest and lowest values
+        highest_value = filtered_df['Value'].max()
+        lowest_value = filtered_df['Value'].min()
+        st.write(f'**Highest value:** {highest_value}')
+        st.write(f'**Lowest value:** {lowest_value}')
+    else:
+        st.write("No data available for the selected date range.")
 
 
 
